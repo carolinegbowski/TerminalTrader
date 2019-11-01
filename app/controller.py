@@ -5,7 +5,8 @@ from . import account
 Account = account.Account
 # note: if you do not create any new Trade or Position objects but only
 # get them as the return values from Account's methods, you do not need
-# to import those classes directly
+# to import those classes directly. You only need to import the class
+# if you need to call the constructor (t=Trade()) or call a class method
 
 def run():
     view.welcome()
@@ -21,7 +22,6 @@ def run():
 def login_menu():
     """ login, create account, or quit. return an Account object on successful login
     return None for quit """
-    from . import Account
     return None
 
 def main_menu(account):
