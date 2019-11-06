@@ -1,5 +1,5 @@
-import sqlite3 
-from app.config import DBPATH 
+import sqlite3
+from app.config import DBPATH
 
 def schema(dbpath=DBPATH):
     """
@@ -49,7 +49,8 @@ def schema(dbpath=DBPATH):
         account_id INTEGER,
         FOREIGN KEY ("account_id") REFERENCES accounts(id)
     ); """
-    
+
+
     DROPSQL_ACCOUNTS = "DROP TABLE IF EXISTS accounts;"
     DROPSQL_POSITIONS = "DROP TABLE IF EXISTS positions;"
     DROPSQL_TRADES = "DROP TABLE IF EXISTS trades;"
