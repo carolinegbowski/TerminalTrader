@@ -1,8 +1,8 @@
 import sqlite3 
 from app.config import DBPATH 
 
-
-"""
+def schema(dbpath=DBPATH):
+    """
     Create these tables
 
     account:
@@ -14,11 +14,10 @@ from app.config import DBPATH
     trade:
         id, ticker, volume, time, price, account_id
     """
-
-
-def schema(dbpath=DBPATH):
+    
+    # TODO: Put Unique constraints back in.
+    
     CREATE_SQL_ACCOUNTS = """
-
     CREATE TABLE accounts(
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         username VARCHAR(15) NOT NULL,
@@ -37,6 +36,7 @@ def schema(dbpath=DBPATH):
         account_id INTEGER,
         FOREIGN KEY ("account_id") REFERENCES accounts(id)
     ); """
+
     # UNIQUE(ticker, account_id)
     
     CREATE_SQL_TRADES = """
@@ -48,9 +48,8 @@ def schema(dbpath=DBPATH):
         time DATE,
         account_id INTEGER,
         FOREIGN KEY ("account_id") REFERENCES accounts(id)
-    );
-        """
-
+    ); """
+    
     DROPSQL_ACCOUNTS = "DROP TABLE IF EXISTS accounts;"
     DROPSQL_POSITIONS = "DROP TABLE IF EXISTS positions;"
     DROPSQL_TRADES = "DROP TABLE IF EXISTS trades;"
