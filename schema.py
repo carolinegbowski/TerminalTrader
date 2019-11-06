@@ -67,4 +67,4 @@ def schema(dbpath=DBPATH):
 
 
 if __name__ == "__main__":
-schema()
+    schema()
