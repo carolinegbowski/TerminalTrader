@@ -28,7 +28,14 @@ class Account:
 
     def __init__(self, **kwargs):
         """ sets each field from kwargs """
-        pass
+        self.id = kwargs.get("id")
+        self.username = kwargs.get("username")
+        self.password_hash = kwargs.get("password_hash")
+        self.balance = kwargs.get("balance", 0.00)
+        self.first_name = kwargs.get("first_name")
+        self.last_name = kwargs.get("last_name")
+        self.email_address = kwargs.get("email_address")
+        
 
     def save(self):
         """ inserts or updates depending on id's value """
