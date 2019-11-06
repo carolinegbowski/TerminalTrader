@@ -44,11 +44,11 @@ class Trade:
 (ticker, volume, unit_price, time, account_id) VALUES 
 (:ticker, :volume, :unit_price, :time, :account_id);"""
             values = {
-                    "ticker": ticker,
-                    "volume": volume,
-                    "unit_price": unit_price,
-                    "time": time.time(),
-                    "account_id": account_id 
+                    "ticker": self.ticker,
+                    "volume": self.volume,
+                    "unit_price": self.unit_price,
+                    "time": self.time,
+                    "account_id": self.account_id 
                     }
             try:
                 cursor.execute(INSERTSQL, values)
@@ -62,14 +62,15 @@ class Trade:
         with sqlite3.connect(self.dbpath) as connection:
             cursor = connection.cursor()
             UPDATESQL = """UPDATE trades
-SET ticker=:ticker, volume=:volume, unit_price:unit_price, time=:time, account=:account_id
+SET ticker=:ticker, volume=:volume, unit_price=:unit_price, time=:time, account_id=:account_id
 WHERE id=:id;"""
             values = {
-                    "ticker": ticker,
-                    "volume": volume,
-                    "unit_price": unit_price,
-                    "time": time.time(),
-                    "account_id": account_id 
+                    "ticker": self.ticker,
+                    "volume": self.volume,
+                    "unit_price": self.unit_price,
+                    "time": self.time,
+                    "account_id": self.account_id,
+                    "id": self.id
                     }
             try:
                 cursor.execute(UPDATESQL, values)
@@ -83,9 +84,9 @@ WHERE id=:id;"""
             cursor = connection.cursor()
             DELETESQL = """DELETE FROM trades WHERE id=:id;"""
             values = {
-                    "id": id
+                    "id": self.id
                     }
-            cursor.execute(DELETESQL, values)   
+            cursor.execute(DELETESQL, values)
             # try:
             #     cursor.execute(DELETESQL, values)
             # except sqlite3.IntegrityError: # as E
@@ -96,6 +97,8 @@ WHERE id=:id;"""
     def from_id(cls, id):
         """ return an object of this class for the given database row id """
         SELECTSQL = "SELECT * FROM trades WHERE id=:id;"
+        with sqlite3.connect(cls.dbpath) as uun:
+            uun.row_factory = sqlite3.Row
         with sqlite3.connect(cls.dbpath) as connection:
             connection.row_factory = sqlite3.Row
             cursor = connection.cursor()
@@ -105,6 +108,7 @@ WHERE id=:id;"""
                 return cls(**dictrow)
             return None
 
+
     @classmethod
     def all(cls):
         """ return a list of every row of this table as objects of this class """
@@ -112,7 +116,6 @@ WHERE id=:id;"""
             connection.row_factory = sqlite3.Row
             cursor = connection.cursor()
             SQL = "SELECT * FROM trades;"
-            print(".excecute() return type:", type(cursor.execute(SQL)))
             cursor.execute(SQL)
             result = []
             for dictrow in cursor.fetchall():
@@ -155,26 +158,28 @@ WHERE id=:id;"""
             connection.row_factory = sqlite3.Row
             cursor = connection.cursor()
             SQL = "SELECT * FROM trades WHERE account_id=:account_id AND ticker=:ticker;"
-            cursor.execute(SQL, {"account_id": account_id})
+            values = {
+                    "account_id": account_id,
+                    "ticker": ticker
+            }
+            cursor.execute(SQL, values)
             result = []
             for dictrow in cursor.fetchall():
                 result.append(cls(**dictrow))
             return result
 
+
     def get_account(self):
         """ return the Account object for this trade """
         return account.Account.from_id(self.account_id)
     
+
     def get_position(self):
         """ return the Position object for this trade """
         return position.Position.from_account_id_and_ticker(self.account_id, self.ticker)
+
 
     def __repr__(self):
         """ return a string representing this object """
         # this is a good default __repr__
         return f"<{type(self).__name__} {self.__dict__}>"
-
-
-t = Trade()
-t.all()
-
