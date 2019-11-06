@@ -94,6 +94,36 @@ class TestPosition(unittest.TestCase):
         orange = Position.from_id(100000000000)
         self.assertIsNone(orange, ".from_id() returns None for nonexistent row")
 
+    def testAll(self):
+        apple = Position(ticker="AAPL", shares=100, account_id=3)
+        orange = Position(ticker="ORNG", shares=150, account_id=3)
+        banana = Position(ticker="BANA", shares=100, account_id=3)
+        apple.save()
+        orange.save()
+        banana.save()
+
+        all_data = Position.all()
+        self.assertEqual(len(all_data), 3, "all data should return 3 rows of data")
+
+        self.assertEqual(all_data[0].ticker, "AAPL", "all function should return all position data")
+        self.assertEqual(all_data[1].ticker, "ORNG", "all function should return all position data")
+        # self.assertEqual(apple.shares,  100, "save updates should increase share amt by 50")
+        # self.assertEqual(apple.account_id,  3, "save should keep the same account_id if not changed")
+
+        # self.assertEqual(all_data, result, "....")
+        pass
 
 
-
+    def testAllFromAccountId(self):
+        apple = Position(ticker="AAPL", shares=0, account_id=3)
+        orange = Position(ticker="ORNG", shares=100, account_id=3)
+        banana = Position(ticker="BANA", shares=100, account_id=3)
+        apple.save()
+        orange.save()
+        banana.save()
+        account_id = apple.id
+        all_account_data = Position.all_from_account_id(account_id)
+        results = []
+        print(all_account_data)
+        self.assertEqual(all_account_data, results, "function should spit out all positions for account id where shares >0")
+        pass
