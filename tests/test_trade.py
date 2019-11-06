@@ -156,9 +156,10 @@ class TestTrade(unittest.TestCase):
         self.assertEqual(all_data[0].ticker, all_data[1].ticker, "all_from_account_id_and_ticker() should only return same ticker data")
 
 
-
     def testGet_account(self):
-        pass
+        trade = Trade(account_id="9999999")
+        accountTest = trade.get_account()
+        tp(accountTest)
 
 
     def testGet_position(self):
