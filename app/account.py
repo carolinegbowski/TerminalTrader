@@ -109,7 +109,6 @@ class Account:
         """ hash the provided password and set self.password_hash """
         salt = bcrypt.gensalt()
         self.password_hash = bcrypt.hashpw(password.encode(), salt)
-        return self.password_hash
 
     @classmethod
     def login(cls, username, password):
