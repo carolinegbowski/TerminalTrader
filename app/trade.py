@@ -8,7 +8,11 @@ from . import errs
 def get_current_price(ticker):
     """ return the current price of a given ticker. can raise NoSuchTickerError or
     ConnectionError """
-    raise errs.NoSuchTickerError
+    # TODO PLACEHOLDER FOR NOW
+    current_price = 0.00
+    if True:
+        return current_price
+    return "errs.NoSuchTickerError"
 
 
 class Trade:
@@ -23,8 +27,8 @@ class Trade:
         self.id = kwargs.get('id')
         self.ticker = kwargs.get('ticker')
         self.volume = kwargs.get('volume', 0.0)
-        self.unit_price = kwargs.get('unit_price')
-        self.time = time.time() # where to get time?
+        self.unit_price = get_current_price(self.ticker)
+        self.time = time.time()
         self.account_id = kwargs.get('account_id')
 
 
@@ -97,8 +101,6 @@ WHERE id=:id;"""
     def from_id(cls, id):
         """ return an object of this class for the given database row id """
         SELECTSQL = "SELECT * FROM trades WHERE id=:id;"
-        with sqlite3.connect(cls.dbpath) as uun:
-            uun.row_factory = sqlite3.Row
         with sqlite3.connect(cls.dbpath) as connection:
             connection.row_factory = sqlite3.Row
             cursor = connection.cursor()

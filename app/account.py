@@ -1,5 +1,9 @@
 import sqlite3
-
+import bcrypt
+from . import position
+from . import trade
+from . import errs
+from .config import DBPATH
 """
 Circular Imports:
 
@@ -12,11 +16,6 @@ from . import
 
 . means 'this folder in the module'
 """
-
-from . import position
-from . import trade
-from . import errs
-from .config import DBPATH
 
 class Account:
 
@@ -35,38 +34,96 @@ class Account:
         self.first_name = kwargs.get("first_name")
         self.last_name = kwargs.get("last_name")
         self.email_address = kwargs.get("email_address")
-        
+
 
     def save(self):
         """ inserts or updates depending on id's value """
-        pass
+        if self.id is None:
+            self._insert()
+        else:
+            self._update()
+
 
     def _insert(self):
         """ inserts a new row into the database and sets self.id """
-        pass
+        with sqlite3.connect(self.dbpath) as connection:
+            cursor = connection.cursor()
+            UPDATESQL = """INSERT INTO accounts
+                        SET username:=username, password_hash:=password_hard, balance:=balance, 
+                            first_name:=first_name, last_name:=last_name, email_address:=email_address
+                        WHERE id=:id;"""
+            values = {
+                    "username": "batman1",
+                    "password_hash": "1234567890",
+                    "balance" : 1000.00,
+                    "first_name" : "Bruce",
+                    "last_name" : "Wayne",
+                    "email_address" : "batman@email.com"
+                    }
+
 
     def _update(self):
         """ updates the row with id=self.id with this objects current values"""
-        pass
+        with sqlite3.connect(self.dbpath) as connection:
+            cursor = connection.cursor()
+            UPDATESQL = """UPDATE accounts
+                        SET username:=username, password_hash:=password_hard, balance:=balance, 
+                            first_name:=first_name, last_name:=last_name, email_address:=email_address
+                        WHERE id=:id;"""
+            values = {
+                    "username": self.username,
+                    "password_hash": self.password_hash,
+                    "balance": self.balance,
+                    "first_name": self.first_name,
+                    "last_name": self.last_name,
+                    "email_address": self.email_address,
+                    "id": self.id
+                    }
+            try:
+                cursor.execute(UPDATESQL, values)
+            except sqlite3.IntegrityError:
+                raise ValueError("ID (id) does not set in datebase.")
+
+
 
     def delete(self):
         """ deletes row with id=self.id from db and sets self.id to None """
         pass
 
+
     @classmethod
     def from_id(cls, id):
         """ return an object of this class for the given database row id """
-        pass
+        SELECTSQL = "SELECT * FROM accounts WHERE id=:id;"
+        with sqlite3.connect(cls.dbpath) as connection:
+            connection.row_factory = sqlite3.Row
+            cursor = connection.cursor()
+            cursor.execute(SELECTSQL, {"id": id})
+            dictrow = cursor.fetchone()
+            if dictrow:
+                return cls(**dictrow)
+            return None
+
 
     @classmethod
     def all(cls):
         """ return a list of every row of this table as objects of this class """
         pass
 
+
     @classmethod
     def delete_all(cls):
         """ delete all rows from this table """
-        pass
+        with sqlite3.connect(cls.dbpath) as connection:
+            connection.row_factory = sqlite3.Row
+            cursor = connection.cursor()
+            SQL = "DELETE FROM accounts;"
+            cursor.execute(SQL)
+            result = []
+            for dictrow in cursor.fetchall():
+                result.append(cls(**dictrow))
+            return result
+
 
     def __repr__(self):
         """ return a string representing this object """
@@ -74,14 +131,37 @@ class Account:
         # Q: using the docs, can you figure out what this is doing?
         return f"<{type(self).__name__} {self.__dict__}>"
 
+
     def set_password_hash(self, password):
         """ hash the provided password and set self.password_hash """
+        salt = bcrypt.gensalt()
+        self.password_hash = bcrypt.hashpw(password.encode(), salt)
+        return self.password_hash
+
+    def get_from_username(self, username):
+        SELECTSQL = "SELECT * FROM accounts WHERE username=:username;"
+        with sqlite3.connect(cls.dbpath) as connection:
+            connection.row_factory = sqlite3.Row
+            cursor = connection.cursor()
+            cursor.execute(SELECTSQL, {"username": username})
+            dictrow = cursor.fetchone()
+            if dictrow:
+                return cls(**dictrow)
+            return None
 
     @classmethod
     def login(cls, username, password):
         """ check search for username and check password, return an object of this 
         class if it matches, None otherwise """
-        return None
+
+
+        # is checkaccount 'safer' inside the if-statement or the same by being outside?
+        checkaccount = cls.get_from_username(username)
+        if bcrypt.checkpw(password, checkaccount.password_hash):
+            return checkaccount
+        else:
+            return None
+
 
     def get_position_for(self, ticker):
         """ return the Position object for this account's holdings in a given
@@ -91,24 +171,49 @@ class Account:
         add to it. """
         return position.Position.from_account_id_and_ticker(self.id, ticker)
     
+
     def get_positions(self):
         """ return all Position objects for this account with more than 0 shares """
         return position.Position.all_from_account_id(self.id)
     
+
     def get_trades_for(self, ticker):
         """ return all Trade objects for this account and a given ticker """
         return trade.Trade.all_from_account_id_and_ticker(self.id, ticker)
     
+
     def get_trades(self):
         """ return all Trades this account has made """
         return trade.Trade.all_from_account_id(self.id)
     
+
     def buy(self, ticker, volume):
-        """ Create a trade and modify a position for this user, creating a buy. Can
-        raise errs.InsufficientFundsError or errs.NoSuchTickerError """
-        raise errs.NoSuchTickerError
+        """ Create a trade and modify a position for this user, creating a buy. 
+        Can raise errs.InsufficientFundsError or errs.NoSuchTickerError """
+        buy_trade = Trade(ticker=ticker, volume=volume, account_id=self.id)
+        #TODO FIX LOGIC LATER!
+        if buy_trade.ticker == "errs.NoSuchTickerError":
+            raise errs.NoSuchTickerError
+        elif self.balance < buy_trade.volume * buy_trade.unit_price:
+            raise errs.InsufficientFundsError
+        
+        increase_position = Position()
+        increase_position.get_positions_for(buy_trade.ticker)
+        increase_position.shares += buy_trade.volume
+        increase_position.save()
+
+        # x = something + buy_trade.volume
+        # y = anotherthing + sell_trade.volume
+        
 
     def sell(self, ticker, volume):
         """ Create a trade and modify a position for this user, creating a sell. Can
         raise errs.InsufficientSharesError or errs.NoSuchTickerError """
         raise errs.NoSuchTickerError
+
+        
+# test_acct = Account()
+# test_acct.save()
+
+# test_acct.set_password_hash
+# test_acct.login("batman", "password1234!@#$")
