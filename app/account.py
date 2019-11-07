@@ -1,4 +1,5 @@
 import sqlite3
+import bcrypt
 
 """
 Circular Imports:
@@ -43,6 +44,24 @@ class Account:
 
     def _insert(self):
         """ inserts a new row into the database and sets self.id """
+        with sqlite3.connect(self.dbpath) as connection: 
+            cursor = connection.cursor()
+            INSERTSQL = """INSERT INTO accounts(username, password_hash, balance, first_name, last_name, email_address) 
+            VALUES (:username, :password_hash, :balance, :first_name, :last_name, :email_address); """
+            values = {
+                "username": self.username,
+                "password_hash" : self.password_hash, 
+                "balance" : self.balance, 
+                "first_name" : self.first_name,
+                "last_name" : self.last_name,
+                "email_address" : self.email_address, 
+            }
+            try: 
+                cursor.execute(INSERTSQL, values)
+                self.id = cursor.lastrowid
+            except sqlite3.IntegrityError:
+                raise ValueError("ticker not set or a position for this ticker already exists")
+        # every other starting here 
         pass
 
     def _update(self):
@@ -51,7 +70,11 @@ class Account:
 
     def delete(self):
         """ deletes row with id=self.id from db and sets self.id to None """
-        pass
+        with sqlite3.connect(self.dbpath) as connection: 
+            cursor = connection.cursor()
+            DELETESQL = """ DELETE FROM accounts WHERE id=:id """
+            cursor.execute(DELETESQL, {"id": self.id})
+            self.id = None
 
     @classmethod
     def from_id(cls, id):
@@ -61,7 +84,15 @@ class Account:
     @classmethod
     def all(cls):
         """ return a list of every row of this table as objects of this class """
-        pass
+        with sqlite3.connect(cls.dbpath) as connection:
+            connection.row_factory = sqlite3.Row
+            cursor = connection.cursor()
+            SELECTSQL = "SELECT * FROM accounts;"
+            cursor.execute(SELECTSQL)
+            result = []
+            for dictrow in cursor.fetchall():
+                result.append(cls(**dictrow))
+            return result
 
     @classmethod
     def delete_all(cls):
@@ -76,6 +107,9 @@ class Account:
 
     def set_password_hash(self, password):
         """ hash the provided password and set self.password_hash """
+        salt = bcrypt.gensalt()
+        self.password_hash = bcrypt.hashpw(password.encode(), salt)
+        return self.password_hash
 
     @classmethod
     def login(cls, username, password):
@@ -111,4 +145,8 @@ class Account:
     def sell(self, ticker, volume):
         """ Create a trade and modify a position for this user, creating a sell. Can
         raise errs.InsufficientSharesError or errs.NoSuchTickerError """
-        raise errs.NoSuchTickerError
+        # CAROLINE 
+        try:
+            
+        except: 
+            raise errs.NoSuchTickerError

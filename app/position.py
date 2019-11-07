@@ -152,7 +152,7 @@ class Position:
             connection.row_factory = sqlite3.Row
             cursor = connection.cursor()
             SELECTSQL = "SELECT * FROM positions WHERE account_id=:account_id AND ticker=:ticker;"
-            ### NOT SURE IF THIS WORKS!!!!
+            ### NOT SURE IF THIS WORKS!!!! NEED TO ADD IF FUNCTIONALITY HERE
             try:
                 cursor.execute(SELECTSQL, {"account_id": account_id, "ticker" : ticker})
                 result = []
