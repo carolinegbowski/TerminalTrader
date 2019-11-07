@@ -152,30 +152,14 @@ class Position:
             connection.row_factory = sqlite3.Row
             cursor = connection.cursor()
             SELECTSQL = "SELECT * FROM positions WHERE account_id=:account_id AND ticker=:ticker;"
-            ### NOT SURE IF THIS WORKS!!!!
-            try:
-                cursor.execute(SELECTSQL, {"account_id": account_id, "ticker" : ticker})
-                result = []
-                for dictrow in cursor.fetchall():
-                    result.append(cls(**dictrow))
-                return result
-            except sqlite3.OperationalError:
-                cls.save(cls)
+            ### NOT SURE IF THIS WORKS!!!! NEED TO ADD IF FUNCTIONALITY HERE
+            cursor.execute(SELECTSQL, {"account_id": account_id, "ticker" : ticker})
+            row = cursor.fetchone()
+            if row:
+                return cls(**row)
+            else: 
+                return cls(account_id=account_id, ticker=ticker, shares=0)
 
-
-
-            # if result == 0:
-            #     cls.save(cls)
-            # else:
-            #     #### if I don't have any rows returned, will it return "none" or literally return nothing?
-            #     ### NOT SURE IF THIS WORKS!!!!
-            #     SELECTSQL = "SELECT * FROM positions WHERE account_id=:account_id AND ticker=:ticker;"
-            #     cursor.execute(SELECTSQL, {"account_id": account_id, "ticker" : ticker})
-            #     result = []
-            #     for dictrow in cursor.fetchall():
-            #         result.append(cls(**dictrow))
-            #     return result
-        
 
     def get_account(self):
         """ return the Account object associated with this object """

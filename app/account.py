@@ -4,6 +4,7 @@ from . import position
 from . import trade
 from . import errs
 from .config import DBPATH
+
 """
 Circular Imports:
 
@@ -46,20 +47,24 @@ class Account:
 
     def _insert(self):
         """ inserts a new row into the database and sets self.id """
-        with sqlite3.connect(self.dbpath) as connection:
+        with sqlite3.connect(self.dbpath) as connection: 
             cursor = connection.cursor()
-            UPDATESQL = """INSERT INTO accounts
-                        SET username:=username, password_hash:=password_hard, balance:=balance, 
-                            first_name:=first_name, last_name:=last_name, email_address:=email_address
-                        WHERE id=:id;"""
+            INSERTSQL = """INSERT INTO accounts(username, password_hash, balance, first_name, last_name, email_address) 
+            VALUES (:username, :password_hash, :balance, :first_name, :last_name, :email_address); """
             values = {
-                    "username": "batman1",
-                    "password_hash": "1234567890",
-                    "balance" : 1000.00,
-                    "first_name" : "Bruce",
-                    "last_name" : "Wayne",
-                    "email_address" : "batman@email.com"
-                    }
+                "username": self.username,
+                "password_hash" : self.password_hash, 
+                "balance" : self.balance, 
+                "first_name" : self.first_name,
+                "last_name" : self.last_name,
+                "email_address" : self.email_address, 
+            }
+            try: 
+                cursor.execute(INSERTSQL, values)
+                self.id = cursor.lastrowid
+            except sqlite3.IntegrityError:
+                raise ValueError("ticker not set or a position for this ticker already exists")
+        # every other starting here 
 
 
     def _update(self):
@@ -85,10 +90,13 @@ class Account:
                 raise ValueError("ID (id) does not set in datebase.")
 
 
-
     def delete(self):
         """ deletes row with id=self.id from db and sets self.id to None """
-        pass
+        with sqlite3.connect(self.dbpath) as connection: 
+            cursor = connection.cursor()
+            DELETESQL = """ DELETE FROM accounts WHERE id=:id """
+            cursor.execute(DELETESQL, {"id": self.id})
+            self.id = None
 
 
     @classmethod
@@ -108,7 +116,15 @@ class Account:
     @classmethod
     def all(cls):
         """ return a list of every row of this table as objects of this class """
-        pass
+        with sqlite3.connect(cls.dbpath) as connection:
+            connection.row_factory = sqlite3.Row
+            cursor = connection.cursor()
+            SELECTSQL = "SELECT * FROM accounts;"
+            cursor.execute(SELECTSQL)
+            result = []
+            for dictrow in cursor.fetchall():
+                result.append(cls(**dictrow))
+            return result
 
 
     @classmethod
@@ -136,7 +152,7 @@ class Account:
         """ hash the provided password and set self.password_hash """
         salt = bcrypt.gensalt()
         self.password_hash = bcrypt.hashpw(password.encode(), salt)
-        return self.password_hash
+
 
     def get_from_username(self, username):
         SELECTSQL = "SELECT * FROM accounts WHERE username=:username;"
@@ -149,12 +165,11 @@ class Account:
                 return cls(**dictrow)
             return None
 
+
     @classmethod
     def login(cls, username, password):
         """ check search for username and check password, return an object of this 
         class if it matches, None otherwise """
-
-
         # is checkaccount 'safer' inside the if-statement or the same by being outside?
         checkaccount = cls.get_from_username(username)
         if bcrypt.checkpw(password, checkaccount.password_hash):
@@ -210,10 +225,3 @@ class Account:
         """ Create a trade and modify a position for this user, creating a sell. Can
         raise errs.InsufficientSharesError or errs.NoSuchTickerError """
         raise errs.NoSuchTickerError
-
-        
-# test_acct = Account()
-# test_acct.save()
-
-# test_acct.set_password_hash
-# test_acct.login("batman", "password1234!@#$")
