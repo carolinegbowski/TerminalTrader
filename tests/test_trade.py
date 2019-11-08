@@ -60,9 +60,11 @@ class TestTrade(unittest.TestCase):
         trade = Trade(ticker="GS", volume=100.0, unit_price=33.44, account_id="7654321")
         trade.save()
         self.assertIsNotNone(trade.id, "save() should set an ID value")
+        self.assertEqual(trade.unit_price, 33.44, "unit_price was saved")
 
         # Second trade instance with same id to update data
         trade2 = Trade.from_id(trade.id)
+        self.assertEqual(trade2.unit_price, 33.44, "unit_price was saved")
         trade2.ticker = "AAPL"
         trade2.volume = 200.0
         trade2.unit_price = 55.66
@@ -124,9 +126,13 @@ class TestTrade(unittest.TestCase):
         trade2 = Trade(ticker="AAPL", volume=300.0, unit_price=55.66, account_id="3333333")
         trade2.save()
 
-        all_data = Trade.delete_all()
-        self.assertEqual(all_data, [], "delete() should return empty list [] from Trades table")
-
+        Trade.delete_all()
+        with sqlite3.connect(DBPATH) as connection:
+            cursor = connection.cursor()
+            SQL = "SELECT * FROM positions;"
+            cursor.execute(SQL)
+            rows = cursor.fetchall()
+            self.assertEqual(len(rows), 0, "delete_all should delete all rows in the database")
     
     def testAll_from_account_id(self):
         # Three trade instances to initialize data
@@ -159,12 +165,12 @@ class TestTrade(unittest.TestCase):
     def testGet_account(self):
         trade = Trade(account_id="9999999")
         accountTest = trade.get_account()
-        tp(accountTest)
 
 
     def testGet_position(self):
-        pass
-    
+        trade = Trade(account_id="9999999")
+        positionTest = trade.get_position()
+
 
 ########### TRACER PRINT -AKA- TOILET PAPER FUNCTION #####################################
 ########### WHY TOLIET PAPER? BECAUSE IT PRINTS CRAP CODE ON DISPOSOBALE "PAPER" #########
@@ -175,5 +181,9 @@ def tp(var):
     for var_name, var_value in callers_local_vars:
         if var_value is var:
             name = var_name
-    print("TRACER", name+":", var)
+    frameinfo = inspect.getframeinfo(inspect.currentframe())
+    print("TRACER line", frameinfo.lineno, name + ":", var)
+
+
+
 

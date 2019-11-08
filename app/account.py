@@ -58,7 +58,7 @@ class Account:
                 "first_name" : self.first_name,
                 "last_name" : self.last_name,
                 "email_address" : self.email_address, 
-            }
+                }
             try: 
                 cursor.execute(INSERTSQL, values)
                 self.id = cursor.lastrowid
@@ -135,10 +135,6 @@ class Account:
             cursor = connection.cursor()
             SQL = "DELETE FROM accounts;"
             cursor.execute(SQL)
-            result = []
-            for dictrow in cursor.fetchall():
-                result.append(cls(**dictrow))
-            return result
 
 
     def __repr__(self):
@@ -154,7 +150,8 @@ class Account:
         self.password_hash = bcrypt.hashpw(password.encode(), salt)
 
 
-    def get_from_username(self, username):
+    @classmethod
+    def get_from_username(cls, username):
         SELECTSQL = "SELECT * FROM accounts WHERE username=:username;"
         with sqlite3.connect(cls.dbpath) as connection:
             connection.row_factory = sqlite3.Row
@@ -205,21 +202,21 @@ class Account:
     def buy(self, ticker, volume):
         """ Create a trade and modify a position for this user, creating a buy. 
         Can raise errs.InsufficientFundsError or errs.NoSuchTickerError """
-        buy_trade = Trade(ticker=ticker, volume=volume, account_id=self.id)
-        #TODO FIX LOGIC LATER!
-        if buy_trade.ticker == "errs.NoSuchTickerError":
-            raise errs.NoSuchTickerError
-        elif self.balance < buy_trade.volume * buy_trade.unit_price:
+        
+        if volume <= 0:
+            raise errs.VolumeLessThanZeroError
+
+        buy_trade = trade.Trade(ticker=ticker, volume=volume, account_id=self.id)
+        buy_trade.unit_price = trade.get_current_price(ticker)
+    
+        if self.balance < buy_trade.volume * buy_trade.unit_price:
             raise errs.InsufficientFundsError
         
-        increase_position = Position()
-        increase_position.get_positions_for(buy_trade.ticker)
+        increase_position = position.Position()
+        increase_position.from_account_id_and_ticker(account_id=buy_trade.account_id, ticker=buy_trade.ticker)
         increase_position.shares += buy_trade.volume
         increase_position.save()
 
-        # x = something + buy_trade.volume
-        # y = anotherthing + sell_trade.volume
-        
 
     def sell(self, ticker, volume):
         """ Create a trade and modify a position for this user, creating a sell. Can
