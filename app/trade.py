@@ -1,18 +1,31 @@
 import sqlite3
 import time  # time.time() => floating point unix time stamp for right now
+import os
 from .config import DBPATH
 from . import account
 from . import position
 from . import errs
 
+DICT_FAKES = {"stok": 123.45, "222": 678.90, "a33a": 98.76}
+
 def get_current_price(ticker):
-    """ return the current price of a given ticker. can raise NoSuchTickerError or
-    ConnectionError """
-    # TODO PLACEHOLDER FOR NOW
-    current_price = 0.00
-    if True:
-        return current_price
-    return "errs.NoSuchTickerError"
+    """ return the current price of a given ticker. 
+    can raise NoSuchTickerError or ConnectionError """
+    if ticker in DICT_FAKES:
+        return DICT_FAKES[tickers]
+
+    CRED_DIR = os.path.join( os.getenv('HOME'), ".credentials" )
+    IEX_TOKEN = "IEXTOKEN.txt"
+    TOKENFILE = os.path.join(CRED_DIR, IEX_TOKEN)
+    token = open(TOKENFILE).read().strip()
+    api_url = "https://cloud.iexapis.com/stable/stock/{ticker}/quote?token={token}"
+    get_url = api_url.format(ticker=ticker, token=token)
+
+    response = requests.get(get_url)
+    if response.status_code == 200:
+        return response.json()['latestPrice']
+        # What does IEX return when ticker doesn't exist?
+
 
 
 class Trade:
@@ -27,7 +40,7 @@ class Trade:
         self.id = kwargs.get('id')
         self.ticker = kwargs.get('ticker')
         self.volume = kwargs.get('volume', 0.0)
-        self.unit_price = get_current_price(self.ticker)
+        self.unit_price = kwargs.get('unit_price')
         self.time = time.time()
         self.account_id = kwargs.get('account_id')
 
