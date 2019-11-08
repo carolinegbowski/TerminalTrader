@@ -22,7 +22,7 @@ def schema(dbpath=DBPATH):
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         username VARCHAR(15) NOT NULL,
         password_hash VARCHAR(30),
-        balance FLOAT
+        balance FLOAT,
         first_name VARCHAR(200),
         last_name VARCHAR(200),
         email_address VARCHAR(50)

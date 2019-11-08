@@ -102,6 +102,7 @@ class Position:
             cursor.execute(SELECTSQL, {"id": id})
             dictrow = cursor.fetchone()
             if dictrow:
+                # this is creating an instance with that particular row of data
                 return cls(**dictrow)
             return None
 
